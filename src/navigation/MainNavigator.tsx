@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { MainTabParamList, HomeStackParamList, EventsStackParamList, ProfileStackParamList, VendorsStackParamList, BudgetStackParamList } from './types';
 import { DashboardScreen } from '../screens/home/DashboardScreen';
 import { NotificationsScreen } from '../screens/home/NotificationsScreen';
@@ -12,6 +13,8 @@ import { CommitteesScreen } from '../screens/events/CommitteesScreen';
 import { CommitteeDetailsScreen } from '../screens/events/CommitteeDetailsScreen';
 import { TasksScreen } from '../screens/events/TasksScreen';
 import { TaskDetailsScreen } from '../screens/events/TaskDetailsScreen';
+import { EventProgramScreen } from '../screens/events/EventProgramScreen';
+import { LiveStreamScreen } from '../screens/events/LiveStreamScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { EditProfileScreen } from '../screens/profile/EditProfileScreen';
 import { SettingsScreen } from '../screens/profile/SettingsScreen';
@@ -23,6 +26,7 @@ import { BudgetOverviewScreen } from '../screens/budget/BudgetOverviewScreen';
 import { BudgetCategoriesScreen } from '../screens/budget/BudgetCategoriesScreen';
 import { AddExpenseScreen } from '../screens/budget/AddExpenseScreen';
 import { ExpenseHistoryScreen } from '../screens/budget/ExpenseHistoryScreen';
+import { EventDetailsMenuButton } from '../components/EventDetailsMenuButton';
 import { Colors } from '../constants/colors';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -43,12 +47,29 @@ const EventsNavigator = () => (
   <EventsStack.Navigator>
     <EventsStack.Screen name="MyEvents" component={MyEventsScreen} options={{ title: 'Events' }} />
     <EventsStack.Screen name="CreateEvent" component={CreateEventScreen} />
-    <EventsStack.Screen name="EventDetails" component={EventDetailsScreen} />
+    <EventsStack.Screen 
+      name="EventDetails" 
+      component={EventDetailsScreen}
+      options={({ route, navigation }) => ({
+        title: 'EventDetails',
+        headerRight: () => (
+          <EventDetailsMenuButton
+            eventId={(route.params as any)?.eventId}
+            navigation={navigation}
+          />
+        ),
+        headerStyle: {
+          backgroundColor: Colors.white,
+        },
+      })}
+    />
     <EventsStack.Screen name="JoinEvent" component={JoinEventScreen} />
     <EventsStack.Screen name="Committees" component={CommitteesScreen} />
     <EventsStack.Screen name="CommitteeDetails" component={CommitteeDetailsScreen} />
     <EventsStack.Screen name="Tasks" component={TasksScreen} />
     <EventsStack.Screen name="TaskDetails" component={TaskDetailsScreen} />
+    <EventsStack.Screen name="EventProgram" component={EventProgramScreen} />
+    <EventsStack.Screen name="LiveStream" component={LiveStreamScreen} />
   </EventsStack.Navigator>
 );
 
@@ -90,27 +111,52 @@ export const MainNavigator = () => {
       <Tab.Screen
         name="HomeTab"
         component={HomeNavigator}
-        options={{ tabBarLabel: 'Home' }}
+        options={{ 
+          tabBarLabel: 'Home',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={color} />
+          ),
+        }}
       />
       <Tab.Screen
         name="EventsTab"
         component={EventsNavigator}
-        options={{ tabBarLabel: 'Events' }}
+        options={{ 
+          tabBarLabel: 'Events',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar" size={size} color={color} />
+          ),
+        }}
       />
       <Tab.Screen
         name="VendorsTab"
         component={VendorsNavigator}
-        options={{ tabBarLabel: 'Vendors' }}
+        options={{ 
+          tabBarLabel: 'Vendors',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="storefront" size={size} color={color} />
+          ),
+        }}
       />
       <Tab.Screen
         name="BudgetTab"
         component={BudgetNavigator}
-        options={{ tabBarLabel: 'Budget' }}
+        options={{ 
+          tabBarLabel: 'Budget',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="wallet" size={size} color={color} />
+          ),
+        }}
       />
       <Tab.Screen
         name="ProfileTab"
         component={ProfileNavigator}
-        options={{ tabBarLabel: 'Profile' }}
+        options={{ 
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" size={size} color={color} />
+          ),
+        }}
       />
     </Tab.Navigator>
   );

@@ -11,6 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.eventyangu.app",
@@ -24,11 +27,26 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.eventyangu.app",
-      "softwareKeyboardLayoutMode": "pan"
+      "versionCode": 1,
+      "softwareKeyboardLayoutMode": "pan",
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "CAMERA",
+        "RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": []
+    "plugins": [
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "ea3c0caf-e0b8-427f-923a-60f15cb5801e"
+      }
+    },
+    "owner": "benaa"
   }
 }

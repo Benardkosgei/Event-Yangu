@@ -21,11 +21,36 @@ export const RoleSelectionScreen: React.FC<Props> = ({ route }) => {
   const [selectedRole, setSelectedRole] = useState('');
   const { register, isLoading } = useAuthStore();
 
-  const handleContinue = async () => {
+  const handleRegister = async () => {
+    if (!selectedRole) {
+      Alert.alert('Role Required', 'Please select a role to continue');
+      return;
+    }
+
+    console.log('Starting registration with:', { email, name, phone, role: selectedRole });
+
     try {
       await register(email, password, name, phone, selectedRole);
-    } catch (error) {
-      Alert.alert('Registration Failed', 'Please try again');
+      console.log('Registration successful');
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      const errorMessage = error?.message || 'Unknown error';
+      
+      let title = 'Registration Failed';
+      let message = 'Please try again';
+
+      if (errorMessage.includes('already registered') || errorMessage.includes('already exists')) {
+        title = 'Email Already Registered';
+        message = 'An account with this email already exists. Please login instead.';
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        message = 'Network error. Please check your connection and try again.';
+      } else if (errorMessage.includes('profile')) {
+        message = 'Failed to create user profile. Please try again or contact support.';
+      } else {
+        message = errorMessage;
+      }
+
+      Alert.alert(title, message);
     }
   };
 
@@ -53,7 +78,7 @@ export const RoleSelectionScreen: React.FC<Props> = ({ route }) => {
 
       <Button
         title="Complete Registration"
-        onPress={handleContinue}
+        onPress={handleRegister}
         disabled={!selectedRole}
         loading={isLoading}
       />

@@ -8,7 +8,10 @@ export const validation = {
 
   password: (password: string): string | null => {
     if (!password) return 'Password is required';
-    if (password.length < 6) return 'Password must be at least 6 characters';
+    if (password.length < 8) return 'Password must be at least 8 characters';
+    if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter';
+    if (!/[a-z]/.test(password)) return 'Password must contain at least one lowercase letter';
+    if (!/[0-9]/.test(password)) return 'Password must contain at least one number';
     return null;
   },
 
@@ -20,8 +23,14 @@ export const validation = {
 
   phone: (phone: string): string | null => {
     if (!phone) return null; // Phone is optional
-    const phoneRegex = /^[+]?[\d\s-()]+$/;
-    if (!phoneRegex.test(phone)) return 'Invalid phone format';
+    // Remove all non-digit characters except leading +
+    const cleaned = phone.replace(/[^\d+]/g, '');
+    // Must have at least 10 digits (excluding country code +)
+    const digitsOnly = cleaned.replace(/\+/g, '');
+    if (digitsOnly.length < 10) return 'Phone number must have at least 10 digits';
+    if (digitsOnly.length > 15) return 'Phone number is too long';
+    // Must start with + or digit
+    if (!/^[+\d]/.test(phone)) return 'Invalid phone format';
     return null;
   },
 

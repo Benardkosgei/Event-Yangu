@@ -13,10 +13,10 @@ const api: AxiosInstance = axios.create({
   },
 });
 
-// Request interceptor - Add auth token
+// Request interceptor - Add auth token from Supabase
 api.interceptors.request.use(
-  (config) => {
-    const token = getAuthToken();
+  async (config) => {
+    const token = await getAuthToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -30,28 +30,60 @@ api.interceptors.request.use(
 // Response interceptor - Handle errors
 api.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized - logout user
-      clearAuthToken();
+      // Handle unauthorized - try to refresh token
+      const refreshed = await refreshAuthToken();
+      if (!refreshed) {
+        // If refresh failed, logout user
+        await clearAuthToken();
+      }
     }
     return Promise.reject(error);
   }
 );
 
-// Token management (will be replaced with secure storage)
-let authToken: string | null = null;
-
-export const setAuthToken = (token: string) => {
-  authToken = token;
+// Token management using Supabase session
+export const getAuthToken = async (): Promise<string | null> => {
+  try {
+    const { supabase } = await import('../lib/supabase');
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token || null;
+  } catch (error) {
+    console.error('Failed to get auth token:', error);
+    return null;
+  }
 };
 
-export const getAuthToken = (): string | null => {
-  return authToken;
+export const refreshAuthToken = async (): Promise<boolean> => {
+  try {
+    const { supabase } = await import('../lib/supabase');
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error || !data.session) {
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Failed to refresh token:', error);
+    return false;
+  }
 };
 
-export const clearAuthToken = () => {
-  authToken = null;
+export const clearAuthToken = async (): Promise<void> => {
+  try {
+    const { supabase } = await import('../lib/supabase');
+    await supabase.auth.signOut();
+    
+    // Also notify the auth store
+    const { useAuthStore } = await import('../store/authStore');
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      sessionExpired: true,
+    });
+  } catch (error) {
+    console.error('Failed to clear auth token:', error);
+  }
 };
 
 export default api;

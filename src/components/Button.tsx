@@ -6,16 +6,20 @@ interface ButtonProps {
   title: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'outline';
+  size?: 'small' | 'medium' | 'large';
   loading?: boolean;
   disabled?: boolean;
+  style?: any;
 }
 
 export const Button: React.FC<ButtonProps> = ({
   title,
   onPress,
   variant = 'primary',
+  size = 'medium',
   loading = false,
   disabled = false,
+  style,
 }) => {
   const isDisabled = !!disabled || !!loading;
   const isLoading = !!loading;
@@ -24,10 +28,14 @@ export const Button: React.FC<ButtonProps> = ({
     <TouchableOpacity
       style={[
         styles.button,
+        size === 'small' && styles.small,
+        size === 'medium' && styles.medium,
+        size === 'large' && styles.large,
         variant === 'primary' && styles.primary,
         variant === 'secondary' && styles.secondary,
         variant === 'outline' && styles.outline,
         isDisabled && styles.disabled,
+        style,
       ]}
       onPress={onPress}
       disabled={isDisabled}
@@ -52,11 +60,21 @@ export const Button: React.FC<ButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    paddingVertical: 14,
-    paddingHorizontal: 24,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  small: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  medium: {
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+  },
+  large: {
+    paddingVertical: 18,
+    paddingHorizontal: 32,
   },
   primary: {
     backgroundColor: Colors.primary,

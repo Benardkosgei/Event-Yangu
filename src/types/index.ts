@@ -112,10 +112,53 @@ export interface EventProfile {
   mediaLinks?: string[];
 }
 
+export type StreamPlatform = 
+  | 'youtube' 
+  | 'facebook' 
+  | 'instagram' 
+  | 'tiktok' 
+  | 'twitch' 
+  | 'custom' 
+  | 'rtmp';
+
+export type StreamVisibility = 'public' | 'members';
+
 export interface LiveStream {
   id: string;
   eventId: string;
-  streamUrl: string;
+  title: string;
+  description?: string;
   isActive: boolean;
-  visibility: 'public' | 'members';
+  visibility: StreamVisibility;
+  scheduledStart?: Date;
+  scheduledEnd?: Date;
+  actualStart?: Date;
+  actualEnd?: Date;
+  createdBy: string;
+  createdAt: Date;
+  sources: StreamSource[];
+}
+
+export interface StreamSource {
+  id: string;
+  liveStreamId: string;
+  platform: StreamPlatform;
+  platformName?: string;
+  streamUrl: string;
+  streamKey?: string;
+  embedCode?: string;
+  isPrimary: boolean;
+  isActive: boolean;
+  viewerCount: number;
+  platformStreamId?: string;
+  platformData?: Record<string, any>;
+  createdAt: Date;
+}
+
+export interface StreamAnalytics {
+  id: string;
+  streamSourceId: string;
+  timestamp: Date;
+  viewerCount: number;
+  engagementData?: Record<string, any>;
 }

@@ -4,9 +4,11 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { EventsStackParamList } from '../../navigation/types';
 import { Input } from '../../components/Input';
 import { Select } from '../../components/Select';
+import { DatePicker } from '../../components/DatePicker';
 import { Button } from '../../components/Button';
 import { Colors } from '../../constants/colors';
 import { useEventStore } from '../../store/eventStore';
+import { useAuthStore } from '../../store/authStore';
 import { validation } from '../../utils/validation';
 
 type Props = NativeStackScreenProps<EventsStackParamList, 'CreateEvent'>;
@@ -26,8 +28,9 @@ export const CreateEventScreen: React.FC<Props> = ({ navigation }) => {
   const [eventType, setEventType] = useState('');
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
-  const [startDate, setStartDate] = useState('');
+  const [startDate, setStartDate] = useState<Date | null>(null);
   const { addEvent } = useEventStore();
+  const user = useAuthStore((state) => state.user);
   const [loading, setLoading] = useState(false);
 
   const [errors, setErrors] = useState({
@@ -44,7 +47,7 @@ export const CreateEventScreen: React.FC<Props> = ({ navigation }) => {
       eventType: validation.required(eventType, 'Event type') || '',
       location: validation.required(location, 'Location') || '',
       description: validation.required(description, 'Description') || '',
-      startDate: validation.required(startDate, 'Start date') || '',
+      startDate: !startDate ? 'Start date is required' : '',
     };
 
     setErrors(newErrors);
@@ -54,20 +57,39 @@ export const CreateEventScreen: React.FC<Props> = ({ navigation }) => {
   const handleCreateEvent = async () => {
     if (!validateForm()) return;
 
+    if (!user) {
+      Alert.alert('Error', 'You must be logged in to create an event');
+      return;
+    }
+
     setLoading(true);
     try {
-      await addEvent({
+      const newEvent = await addEvent({
         name: eventName,
         type: eventType as any,
         location,
         description,
-        startDate: new Date(startDate),
-        createdBy: '1',
+        startDate: startDate!,
+        createdBy: user.id,
       });
-      Alert.alert('Success', 'Event created successfully!');
-      navigation.goBack();
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create event');
+      
+      Alert.alert(
+        'Success!', 
+        `Event created successfully!\n\nJoin Code: ${newEvent.joinCode}\n\nShare this code with others to invite them.`,
+        [
+          {
+            text: 'View Event',
+            onPress: () => {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'MyEvents' }],
+              });
+            },
+          },
+        ]
+      );
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Failed to create event');
     } finally {
       setLoading(false);
     }
@@ -106,12 +128,12 @@ export const CreateEventScreen: React.FC<Props> = ({ navigation }) => {
           error={errors.location}
         />
 
-        <Input
+        <DatePicker
           label="Start Date"
           value={startDate}
-          onChangeText={setStartDate}
-          placeholder="YYYY-MM-DD"
+          onChange={setStartDate}
           error={errors.startDate}
+          minimumDate={new Date()}
         />
 
         <Input

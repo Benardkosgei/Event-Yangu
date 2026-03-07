@@ -1,26 +1,62 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BudgetStackParamList } from '../../navigation/types';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
+import { EmptyState } from '../../components/EmptyState';
 import { Colors } from '../../constants/colors';
+import { useBudgetStore } from '../../store/budgetStore';
 
 type Props = NativeStackScreenProps<BudgetStackParamList, 'BudgetOverview'>;
 
-const mockCategories = [
-  { id: '1', name: 'Venue', allocated: 50000, spent: 45000 },
-  { id: '2', name: 'Catering', allocated: 80000, spent: 72000 },
-  { id: '3', name: 'Entertainment', allocated: 30000, spent: 15000 },
-  { id: '4', name: 'Decoration', allocated: 20000, spent: 18000 },
-];
-
 export const BudgetOverviewScreen: React.FC<Props> = ({ navigation, route }) => {
   const { eventId } = route.params;
-  
-  const totalAllocated = mockCategories.reduce((sum, cat) => sum + cat.allocated, 0);
-  const totalSpent = mockCategories.reduce((sum, cat) => sum + cat.spent, 0);
-  const percentage = Math.round((totalSpent / totalAllocated) * 100);
+  const { budgets, isLoading, loadBudget } = useBudgetStore();
+  const budget = budgets[eventId];
+
+  useEffect(() => {
+    loadBudget(eventId);
+  }, [eventId]);
+
+  if (isLoading && !budget) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
+  if (!budget) {
+    return (
+      <View style={styles.container}>
+        <EmptyState
+          icon="💰"
+          title="No Budget Yet"
+          message="Create a budget to start tracking expenses for this event"
+          actionLabel="Create Budget"
+          onAction={() => {
+            // TODO: Navigate to create budget screen
+            navigation.goBack();
+          }}
+        />
+      </View>
+    );
+  }
+
+  const totalSpent = budget.expenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const percentage = Math.round((totalSpent / budget.totalBudget) * 100);
+
+  // Calculate spent per category
+  const categorySpending = budget.categories.map((category) => {
+    const spent = budget.expenses
+      .filter((exp) => exp.categoryId === category.id)
+      .reduce((sum, exp) => sum + exp.amount, 0);
+    return {
+      ...category,
+      spent,
+    };
+  });
 
   return (
     <ScrollView style={styles.container}>
@@ -30,10 +66,10 @@ export const BudgetOverviewScreen: React.FC<Props> = ({ navigation, route }) => 
 
       <Card style={styles.summaryCard}>
         <Text style={styles.summaryLabel}>Total Budget</Text>
-        <Text style={styles.summaryAmount}>KES {totalAllocated.toLocaleString()}</Text>
+        <Text style={styles.summaryAmount}>KES {budget.totalBudget.toLocaleString()}</Text>
         
         <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${percentage}%` }]} />
+          <View style={[styles.progressFill, { width: `${Math.min(percentage, 100)}%` }]} />
         </View>
         
         <View style={styles.summaryRow}>
@@ -43,8 +79,11 @@ export const BudgetOverviewScreen: React.FC<Props> = ({ navigation, route }) => 
           </View>
           <View style={styles.summaryRight}>
             <Text style={styles.summarySubLabel}>Remaining</Text>
-            <Text style={styles.summarySubAmount}>
-              KES {(totalAllocated - totalSpent).toLocaleString()}
+            <Text style={[
+              styles.summarySubAmount,
+              totalSpent > budget.totalBudget && styles.overBudget
+            ]}>
+              KES {(budget.totalBudget - totalSpent).toLocaleString()}
             </Text>
           </View>
         </View>
@@ -52,8 +91,8 @@ export const BudgetOverviewScreen: React.FC<Props> = ({ navigation, route }) => 
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Categories</Text>
-        {mockCategories.map((category) => {
-          const catPercentage = Math.round((category.spent / category.allocated) * 100);
+        {categorySpending.map((category) => {
+          const catPercentage = Math.round((category.spent / category.allocatedAmount) * 100);
           return (
             <Card
               key={category.id}
@@ -61,15 +100,24 @@ export const BudgetOverviewScreen: React.FC<Props> = ({ navigation, route }) => 
             >
               <View style={styles.categoryHeader}>
                 <Text style={styles.categoryName}>{category.name}</Text>
-                <Text style={styles.categoryPercentage}>{catPercentage}%</Text>
+                <Text style={[
+                  styles.categoryPercentage,
+                  catPercentage > 100 && styles.overBudget
+                ]}>
+                  {catPercentage}%
+                </Text>
               </View>
               <View style={styles.categoryAmounts}>
                 <Text style={styles.categoryAmount}>
-                  KES {category.spent.toLocaleString()} / {category.allocated.toLocaleString()}
+                  KES {category.spent.toLocaleString()} / {category.allocatedAmount.toLocaleString()}
                 </Text>
               </View>
               <View style={styles.categoryProgress}>
-                <View style={[styles.categoryProgressFill, { width: `${catPercentage}%` }]} />
+                <View style={[
+                  styles.categoryProgressFill,
+                  { width: `${Math.min(catPercentage, 100)}%` },
+                  catPercentage > 100 && styles.overBudgetBar
+                ]} />
               </View>
             </Card>
           );
@@ -194,5 +242,17 @@ const styles = StyleSheet.create({
   actions: {
     padding: 24,
     gap: 12,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+  },
+  overBudget: {
+    color: Colors.error,
+  },
+  overBudgetBar: {
+    backgroundColor: Colors.error,
   },
 });

@@ -4,6 +4,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/types';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
+import { PasswordStrengthIndicator } from '../../components/PasswordStrengthIndicator';
 import { Colors } from '../../constants/colors';
 import { validation } from '../../utils/validation';
 
@@ -26,7 +27,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
     const newErrors = {
       name: validation.name(name) || '',
       email: validation.email(email) || '',
-      phone: validation.phone(phone) || '',
+      phone: phone ? (validation.phone(phone) || '') : '',
       password: validation.password(password) || '',
     };
 
@@ -80,6 +81,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
             secureTextEntry={true}
             error={errors.password}
           />
+          <PasswordStrengthIndicator password={password} />
 
           <Button title="Continue" onPress={handleRegister} />
 

@@ -35,8 +35,35 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
     try {
       await login(email, password);
-    } catch (error) {
-      Alert.alert('Login Failed', 'Invalid email or password');
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Unknown error';
+      
+      let title = 'Login Failed';
+      let message = 'Please try again';
+
+      switch (errorMessage) {
+        case 'INVALID_CREDENTIALS':
+          message = 'Invalid email or password. Please check your credentials and try again.';
+          break;
+        case 'EMAIL_NOT_CONFIRMED':
+          title = 'Email Not Confirmed';
+          message = 'Please check your email and confirm your account before logging in.';
+          break;
+        case 'USER_NOT_FOUND':
+          message = 'No account found with this email. Please sign up first.';
+          break;
+        case 'PROFILE_NOT_FOUND':
+          message = 'Account profile not found. Please contact support.';
+          break;
+        default:
+          if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+            message = 'Network error. Please check your connection and try again.';
+          } else {
+            message = errorMessage;
+          }
+      }
+
+      Alert.alert(title, message);
     }
   };
 
@@ -68,6 +95,10 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
           />
 
           <Button title="Login" onPress={handleLogin} loading={isLoading} />
+
+          <Text style={styles.forgotPassword} onPress={() => navigation.navigate('ForgotPassword')}>
+            Forgot Password?
+          </Text>
 
           <Text style={styles.link} onPress={() => navigation.navigate('Register')}>
             Don't have an account? Register
@@ -102,10 +133,16 @@ const styles = StyleSheet.create({
   form: {
     gap: 16,
   },
-  link: {
+  forgotPassword: {
     fontSize: 14,
     color: Colors.primary,
     textAlign: 'center',
     marginTop: 8,
+  },
+  link: {
+    fontSize: 14,
+    color: Colors.primary,
+    textAlign: 'center',
+    marginTop: 16,
   },
 });

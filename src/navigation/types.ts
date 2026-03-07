@@ -11,6 +11,8 @@ export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
   RoleSelection: { name: string; email: string; phone: string; password: string };
+  ForgotPassword: undefined;
+  ResetPassword: undefined;
 };
 
 export type MainTabParamList = {
@@ -48,7 +50,7 @@ export type VendorsStackParamList = {
 };
 
 export type BudgetStackParamList = {
-  BudgetOverview: { eventId: string };
+  BudgetOverview: { eventId?: string } | undefined;
   BudgetCategories: { eventId: string };
   AddExpense: { eventId: string };
   ExpenseHistory: { eventId: string };
