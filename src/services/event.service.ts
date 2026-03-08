@@ -45,58 +45,112 @@ export const eventService = {
   },
 
   async createEvent(eventData: Partial<Event>): Promise<Event> {
-    const { data: { user } } = await supabase.auth.getUser();
+    console.log('=== EVENT CREATION START ===');
+    
+    // Step 1: Verify authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('Authentication error:', authError);
+      throw new Error('Authentication failed: ' + authError.message);
+    }
     
     if (!user) {
-      throw new Error('Not authenticated');
+      console.error('No authenticated user found');
+      throw new Error('Not authenticated. Please sign in first.');
     }
 
+    console.log('✓ User authenticated:', user.id);
+
+    // Step 2: Validate input data
+    if (!eventData.name || eventData.name.trim().length < 3) {
+      throw new Error('Event name must be at least 3 characters');
+    }
+    if (!eventData.type) {
+      throw new Error('Event type is required');
+    }
+    if (!eventData.location || eventData.location.trim().length < 2) {
+      throw new Error('Location must be at least 2 characters');
+    }
+    if (!eventData.startDate) {
+      throw new Error('Start date is required');
+    }
+
+    console.log('✓ Input validation passed');
+
+    // Step 3: Generate join code
     const joinCode = generateJoinCode();
+    console.log('✓ Join code generated:', joinCode);
 
-    console.log('Creating event with data:', {
-      name: eventData.name,
+    // Step 4: Prepare event data
+    const eventInsertData = {
+      name: eventData.name.trim(),
       type: eventData.type,
-      location: eventData.location,
-      userId: user.id,
-    });
+      description: eventData.description?.trim() || null,
+      start_date: eventData.startDate.toISOString(),
+      end_date: eventData.endDate?.toISOString() || null,
+      location: eventData.location.trim(),
+      join_code: joinCode,
+      created_by: user.id,
+    };
 
+    console.log('Event insert data:', JSON.stringify(eventInsertData, null, 2));
+
+    // Step 5: Insert event
     const { data: event, error: eventError } = await supabase
       .from('events')
-      .insert({
-        name: eventData.name!,
-        type: eventData.type!,
-        description: eventData.description,
-        start_date: eventData.startDate!.toISOString(),
-        end_date: eventData.endDate?.toISOString(),
-        location: eventData.location!,
-        join_code: joinCode,
-        created_by: user.id,
-      })
+      .insert(eventInsertData)
       .select()
       .single();
 
     if (eventError) {
-      console.error('Event creation error:', eventError);
+      console.error('❌ Event creation error:', {
+        message: eventError.message,
+        details: eventError.details,
+        hint: eventError.hint,
+        code: eventError.code,
+      });
+      
+      // Provide more specific error messages
+      if (eventError.code === '42501') {
+        throw new Error('Permission denied. Please check your account permissions.');
+      } else if (eventError.code === '23505') {
+        throw new Error('An event with this join code already exists. Please try again.');
+      } else if (eventError.message.includes('RLS')) {
+        throw new Error('Database security policy error. Please contact support.');
+      }
+      
       throw new Error(eventError.message || 'Failed to create event');
     }
 
-    console.log('Event created successfully:', event.id);
+    console.log('✓ Event created successfully:', event.id);
 
-    // Add creator as event member with admin role
-    const { error: memberError } = await supabase
+    // Step 6: Add creator as event member with admin role
+    console.log('Adding creator as event member...');
+    const { data: member, error: memberError } = await supabase
       .from('event_members')
       .insert({
         event_id: event.id,
         user_id: user.id,
         role: 'admin',
-      });
+      })
+      .select()
+      .single();
 
     if (memberError) {
-      console.error('Failed to add creator as member:', memberError);
+      console.error('❌ Failed to add creator as member:', {
+        message: memberError.message,
+        details: memberError.details,
+        hint: memberError.hint,
+        code: memberError.code,
+      });
+      console.warn('⚠️  Event created but member assignment failed. You may need to rejoin the event.');
       // Don't throw error here, event is already created
     } else {
-      console.log('Creator added as event member');
+      console.log('✓ Creator added as event member:', member.id);
     }
+
+    console.log('=== EVENT CREATION SUCCESS ===');
 
     return {
       id: event.id,
