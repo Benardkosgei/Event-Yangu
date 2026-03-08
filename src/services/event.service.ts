@@ -53,6 +53,13 @@ export const eventService = {
 
     const joinCode = generateJoinCode();
 
+    console.log('Creating event with data:', {
+      name: eventData.name,
+      type: eventData.type,
+      location: eventData.location,
+      userId: user.id,
+    });
+
     const { data: event, error: eventError } = await supabase
       .from('events')
       .insert({
@@ -69,8 +76,11 @@ export const eventService = {
       .single();
 
     if (eventError) {
-      throw new Error('Failed to create event');
+      console.error('Event creation error:', eventError);
+      throw new Error(eventError.message || 'Failed to create event');
     }
+
+    console.log('Event created successfully:', event.id);
 
     // Add creator as event member with admin role
     const { error: memberError } = await supabase
@@ -82,7 +92,10 @@ export const eventService = {
       });
 
     if (memberError) {
-      console.warn('Failed to add creator as member:', memberError);
+      console.error('Failed to add creator as member:', memberError);
+      // Don't throw error here, event is already created
+    } else {
+      console.log('Creator added as event member');
     }
 
     return {
